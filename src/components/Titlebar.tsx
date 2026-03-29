@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Shield, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
+import logoImg from "@/assets/logo-32.png";
 
 const appWindow = getCurrentWindow();
 
@@ -33,9 +34,7 @@ export function Titlebar({ onSettingsClick }: TitlebarProps) {
     >
       {/* App icon + title */}
       <div className="flex items-center gap-2 px-3 pointer-events-none" data-tauri-drag-region>
-        <div className="w-4 h-4 rounded-sm bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-          <Shield className="w-2.5 h-2.5 text-white" />
-        </div>
+        <img src={logoImg} alt="" className="w-4 h-4" />
         <span className="text-[11px] font-medium text-[var(--titlebar-fg,rgba(255,255,255,0.5))]">Purgr</span>
       </div>
 

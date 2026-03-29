@@ -23,6 +23,13 @@ pnpm-debug.log*
 .env
 .env.*
 
+# Signing keys
+*.key
+*.key.pub
+.tauri/
+~/.tauri/
+~/
+
 # Editor directories
 .vscode
 .idea

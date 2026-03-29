@@ -1,0 +1,11 @@
+{
+  "version": "0.1.0",
+  "notes": "Initial release",
+  "pub_date": "2026-03-29T00:00:00Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSbHIyNE5YV1JxVVg1WDFpNlFBakl2djIxUU15ak9KMTc5MDR3cVdvRDlBSjI5clpTd2NVR2ZaZTJWbkhBVXdObGVYUXlvY3ZkM2J3UTFxRWJJQ1paeGhjN08zYno2QWcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc0ODA4NTYyCWZpbGU6UHVyZ3JfMC4xLjBfeDY0LXNldHVwLm5zaXMuemlwCmFBK0U0NTEySDBreGJSZFIyZzZvSVpRU0NjdW5ZOUh3YXpsaXRXcDIvc3pVbUp4aWg1aUgvbHpDVDJRMEI4cTVpNlo1SEJxYk1tc21zaERiczRJL0RRPT0K",
+      "url": "https://github.com/Serotops/purgr/releases/download/v0.1.0/Purgr_0.1.0_x64-setup.nsis.zip"
+    }
+  }
+}

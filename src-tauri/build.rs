@@ -1,12 +1,22 @@
 fn main() {
-    // In release builds, request admin elevation at startup (single UAC prompt).
-    // In debug/dev builds, skip this so `cargo run` works normally.
     #[cfg(target_os = "windows")]
     {
         let mut windows = tauri_build::WindowsAttributes::new();
         if !cfg!(debug_assertions) {
             windows = windows.app_manifest(r#"
                 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+                    <dependency>
+                        <dependentAssembly>
+                            <assemblyIdentity
+                                type="win32"
+                                name="Microsoft.Windows.Common-Controls"
+                                version="6.0.0.0"
+                                processorArchitecture="*"
+                                publicKeyToken="6595b64144ccf1df"
+                                language="*"
+                            />
+                        </dependentAssembly>
+                    </dependency>
                     <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
                         <security>
                             <requestedPrivileges>

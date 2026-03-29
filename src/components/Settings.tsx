@@ -3,7 +3,8 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
-import { Sun, Moon, Monitor, ExternalLink, Shield, Globe, Search, ArrowUpDown, ChevronDown } from "lucide-react";
+import { Sun, Moon, Monitor, ExternalLink, Globe, Search, ArrowUpDown, ChevronDown } from "lucide-react";
+import logoImg from "@/assets/logo.png";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useI18n } from "@/hooks/useI18n";
 import {
@@ -66,9 +67,7 @@ export function SettingsDialog({ open, onOpenChange, theme, onThemeChange }: Set
         {/* Header — About */}
         <div className="px-6 pt-6 pb-4 bg-gradient-to-b from-primary/5 to-transparent">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
+            <img src={logoImg} alt="Purgr" className="w-11 h-11 rounded-xl shadow-lg" />
             <div>
               <h2 className="text-base font-bold">Purgr</h2>
               <p className="text-[11px] text-muted-foreground">v0.1.0</p>

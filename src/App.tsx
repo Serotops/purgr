@@ -11,6 +11,7 @@ import { useApps } from "@/hooks/useApps";
 import { Titlebar } from "@/components/Titlebar";
 import { SettingsDialog, useTheme } from "@/components/Settings";
 import { useI18n } from "@/hooks/useI18n";
+import { useUpdater } from "@/hooks/useUpdater";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2, PackageX, Package, HardDrive, Trash2 } from "lucide-react";
+import { Loader2, PackageX, Package, HardDrive, Trash2, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SortField } from "@/types";
 
@@ -67,6 +68,7 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const { t } = useI18n();
+  const { update, installUpdate, dismissUpdate } = useUpdater();
 
   const {
     apps,
@@ -174,6 +176,36 @@ function App() {
     <TooltipProvider delayDuration={200}>
       <div className="h-screen flex flex-col bg-background" onKeyDown={handleKeyDown} tabIndex={-1}>
         <Titlebar onSettingsClick={() => setSettingsOpen(true)} />
+
+        {/* Update banner */}
+        {update.available && (
+          <div className="flex-shrink-0 bg-primary/10 border-b border-primary/20 px-5 py-2 flex items-center gap-3">
+            <Download className="w-4 h-4 text-primary flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              {update.downloading ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-xs">Downloading v{update.version}...</span>
+                  <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden max-w-[200px]">
+                    <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${update.progress}%` }} />
+                  </div>
+                  <span className="text-xs text-muted-foreground tabular-nums">{update.progress}%</span>
+                </div>
+              ) : (
+                <span className="text-xs">v{update.version} available</span>
+              )}
+            </div>
+            {!update.downloading && (
+              <>
+                <Button variant="default" size="sm" className="h-6 text-[11px] px-2.5" onClick={installUpdate}>
+                  Update
+                </Button>
+                <button onClick={dismissUpdate} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Header */}
         <header className="flex-shrink-0 border-b bg-card/80 backdrop-blur-sm">
