@@ -7,7 +7,7 @@
     "search": "Rechercher par nom ou éditeur...",
     "all": "Tout",
     "installed": "Installées",
-    "orphans": "Orphelines",
+    "orphans": "Résidus",
     "total": "total"
   },
   "sort": {
@@ -20,7 +20,7 @@
     "scanningHint": "Cela peut prendre quelques secondes",
     "noMatch": "Aucune application ne correspond",
     "noApps": "Aucune application trouvée",
-    "orphan": "Orpheline",
+    "orphan": "Résidu",
     "uninstalling": "Désinstallation",
     "verifying": "Vérification",
     "removed": "Supprimée",
@@ -31,7 +31,7 @@
     "removeRegistryEntry": "Supprimer l'entrée du registre",
     "openLocation": "Ouvrir l'emplacement",
     "recheck": "Revérifier",
-    "removeAllOrphans": "Supprimer les {count} entrées orphelines",
+    "removeAllOrphans": "Supprimer les {count} entrées résiduelles",
     "showingOf": "Affichage de {filtered} sur {total} applications"
   },
   "disk": {
@@ -79,10 +79,10 @@
     "stillInRegistry": "Toujours dans le registre — réessayez ou supprimez l'entrée manuellement"
   },
   "bulkRemove": {
-    "title": "Supprimer toutes les entrées orphelines",
-    "confirm": "Cela supprimera {count} entrées orphelines du registre. Ces entrées correspondent à des applications qui ne sont plus installées. Cette action est irréversible.",
+    "title": "Supprimer toutes les entrées résiduelles",
+    "confirm": "Cela supprimera {count} entrées résiduelles du registre. Ces entrées correspondent à des applications dont le dossier d'installation n'existe plus. Cette action est irréversible.",
     "button": "Supprimer {count} entrées",
-    "success": "{count} entrées orphelines supprimées"
+    "success": "{count} entrées résiduelles supprimées"
   },
   "settings": {
     "title": "Paramètres",
@@ -106,8 +106,8 @@
     "scanning": "Analyse...",
     "ready": "Prêt",
     "apps": "applications",
-    "orphan": "orpheline",
-    "orphans": "orphelines"
+    "orphan": "résidu",
+    "orphans": "résidus"
   },
   "errors": {
     "retry": "Réessayer",

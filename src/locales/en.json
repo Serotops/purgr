@@ -7,7 +7,7 @@
     "search": "Search by name or publisher...",
     "all": "All",
     "installed": "Installed",
-    "orphans": "Orphans",
+    "orphans": "Leftovers",
     "total": "total"
   },
   "sort": {
@@ -20,7 +20,7 @@
     "scanningHint": "This may take a few seconds",
     "noMatch": "No apps match your filters",
     "noApps": "No apps found",
-    "orphan": "Orphan",
+    "orphan": "Leftover",
     "uninstalling": "Uninstalling",
     "verifying": "Verifying",
     "removed": "Removed",
@@ -31,7 +31,7 @@
     "removeRegistryEntry": "Remove Registry Entry",
     "openLocation": "Open Location",
     "recheck": "Recheck",
-    "removeAllOrphans": "Remove All {count} Orphan Entries",
+    "removeAllOrphans": "Remove All {count} Leftover Entries",
     "showingOf": "Showing {filtered} of {total} apps"
   },
   "disk": {
@@ -79,10 +79,10 @@
     "stillInRegistry": "Still in registry — try again or remove the entry manually"
   },
   "bulkRemove": {
-    "title": "Remove All Orphan Entries",
-    "confirm": "This will remove {count} orphan registry entries. These are entries for apps that are no longer installed on your system. This action cannot be undone.",
+    "title": "Remove All Leftover Entries",
+    "confirm": "This will remove {count} leftover registry entries. These are entries for apps whose install folder no longer exists. This action cannot be undone.",
     "button": "Remove {count} Entries",
-    "success": "Removed {count} orphan entries"
+    "success": "Removed {count} leftover entries"
   },
   "settings": {
     "title": "Settings",
@@ -106,8 +106,8 @@
     "scanning": "Scanning...",
     "ready": "Ready",
     "apps": "apps",
-    "orphan": "orphan",
-    "orphans": "orphans"
+    "orphan": "leftover",
+    "orphans": "leftovers"
   },
   "errors": {
     "retry": "Retry",

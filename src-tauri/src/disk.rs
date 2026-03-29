@@ -154,13 +154,22 @@ fn list_dir_fast(path: &Path) -> Vec<RawEntry> {
 
     let mut results = Vec::new();
 
+    // Reparse tag constants
+    const IO_REPARSE_TAG_SYMLINK: u32 = 0xA000000C;
+    const IO_REPARSE_TAG_MOUNT_POINT: u32 = 0xA0000003;
+
     loop {
         let name = wide_to_string(&fd.cFileName);
         if name != "." && name != ".." {
             let is_dir = fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY != 0;
             let size = ((fd.nFileSizeHigh as u64) << 32) | fd.nFileSizeLow as u64;
-            // Skip reparse points (symlinks, junctions) to avoid loops
-            if fd.dwFileAttributes & 0x400 == 0 {
+            let is_reparse = fd.dwFileAttributes & 0x400 != 0;
+
+            // Only skip symlinks and junctions (mount points) to avoid loops.
+            // Keep other reparse points (OneDrive, dedup, etc.)
+            let skip = is_reparse && (fd.dwReserved0 == IO_REPARSE_TAG_SYMLINK || fd.dwReserved0 == IO_REPARSE_TAG_MOUNT_POINT);
+
+            if !skip {
                 results.push(RawEntry { name, size, is_dir });
             }
         }

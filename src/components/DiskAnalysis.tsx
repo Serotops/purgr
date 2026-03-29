@@ -214,7 +214,7 @@ export function DiskAnalysis() {
 
           <div className="border-t">
             <div className="divide-y">
-              {currentEntry.children.filter((c) => c.size > 0).map((child) => (
+              {currentEntry.children.filter((c) => c.size > 0 || c.is_dir).map((child) => (
                 <FolderRow key={child.path + child.name} entry={child} parentSize={currentEntry.size}
                   onDrillDown={drillDown} onContextMenu={handleContextMenu} onDelete={handleDeleteRequest} />
               ))}

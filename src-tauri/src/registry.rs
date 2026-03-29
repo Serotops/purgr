@@ -121,45 +121,50 @@ pub fn scan_installed_apps() -> Result<Vec<InstalledApp>, Box<dyn std::error::Er
     Ok(apps)
 }
 
-fn determine_orphan_status(install_location: &str, uninstall_string: &str) -> bool {
-    // If we have an install location, check if it exists
-    if !install_location.is_empty() {
-        let path = Path::new(install_location);
-        if !path.exists() {
-            return true;
-        }
+fn determine_orphan_status(install_location: &str, _uninstall_string: &str) -> bool {
+    // Only mark as orphan if we have a clear InstallLocation that doesn't exist.
+    // Never guess from uninstall exe paths — too many false positives.
+    if install_location.is_empty() {
         return false;
     }
 
-    // If no install location but we have an uninstall string, try to extract the exe path
-    if !uninstall_string.is_empty() {
-        let exe_path = extract_exe_path(uninstall_string);
-        if !exe_path.is_empty() {
-            let path = Path::new(&exe_path);
-            if !path.exists() {
-                return true;
-            }
-            return false;
-        }
+    let cleaned = install_location
+        .trim()
+        .trim_matches('"')
+        .trim_end_matches('\\');
+
+    // Must look like a real absolute path: drive letter + colon + backslash + something
+    if cleaned.len() <= 3 || !cleaned.contains('\\') {
+        return false;
     }
 
-    // Can't determine — not an orphan by default
-    false
+    // Must start with a drive letter (e.g., C:\)
+    let bytes = cleaned.as_bytes();
+    if !(bytes[0].is_ascii_alphabetic() && bytes[1] == b':' && bytes[2] == b'\\') {
+        return false;
+    }
+
+    !Path::new(cleaned).exists()
 }
 
 fn extract_exe_path(uninstall_string: &str) -> String {
     let trimmed = uninstall_string.trim();
+
+    // Handle MsiExec — can't determine path from this
+    if trimmed.to_lowercase().starts_with("msiexec") {
+        return String::new();
+    }
+
+    // Handle rundll32 — can't determine path
+    if trimmed.to_lowercase().starts_with("rundll32") {
+        return String::new();
+    }
 
     // Handle quoted paths
     if trimmed.starts_with('"') {
         if let Some(end) = trimmed[1..].find('"') {
             return trimmed[1..end + 1].to_string();
         }
-    }
-
-    // Handle MsiExec — can't determine path from this
-    if trimmed.to_lowercase().starts_with("msiexec") {
-        return String::new();
     }
 
     // Handle unquoted paths — take everything up to .exe
