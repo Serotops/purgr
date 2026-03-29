@@ -223,23 +223,19 @@ pub fn remove_registry_entry(registry_key: &str) -> Result<String, Box<dyn std::
 fn remove_registry_entry_elevated(registry_key: &str) -> Result<String, Box<dyn std::error::Error>> {
     use std::process::Command;
 
-    // reg.exe expects HKLM\ or HKCU\ prefix
-    let full_key = registry_key.to_string();
-
     let output = Command::new("powershell")
         .args([
-            "-Command",
+            "-NoProfile", "-Command",
             &format!(
                 "Start-Process reg.exe -ArgumentList 'delete \"{}\" /f' -Verb RunAs -Wait -WindowStyle Hidden",
-                full_key
+                registry_key
             ),
         ])
         .output()?;
 
     if output.status.success() {
-        // Verify the key is actually gone
         if !check_entry_exists(registry_key).unwrap_or(true) {
-            Ok(format!("Registry entry removed successfully (elevated)"))
+            Ok("Registry entry removed successfully (elevated)".to_string())
         } else {
             Err("Elevation succeeded but registry entry still exists".into())
         }
@@ -247,4 +243,88 @@ fn remove_registry_entry_elevated(registry_key: &str) -> Result<String, Box<dyn 
         let stderr = String::from_utf8_lossy(&output.stderr);
         Err(format!("Elevated removal failed: {}", stderr).into())
     }
+}
+
+/// Bulk remove multiple registry entries with a single elevation prompt
+pub fn bulk_remove_registry_entries(registry_keys: &[String]) -> Vec<Result<String, String>> {
+    use std::process::Command;
+
+    // Separate HKCU (no elevation needed) from HKLM (needs elevation)
+    let mut hkcu_keys = Vec::new();
+    let mut hklm_keys = Vec::new();
+
+    for key in registry_keys {
+        if key.starts_with("HKCU") {
+            hkcu_keys.push(key.clone());
+        } else {
+            hklm_keys.push(key.clone());
+        }
+    }
+
+    let mut results: Vec<(String, Result<String, String>)> = Vec::new();
+
+    // Handle HKCU keys directly (no elevation needed)
+    for key in &hkcu_keys {
+        let result = remove_registry_entry(key)
+            .map(|s| s)
+            .map_err(|e| e.to_string());
+        results.push((key.clone(), result));
+    }
+
+    // Handle HKLM keys in a single elevated PowerShell session
+    if !hklm_keys.is_empty() {
+        // Build a PowerShell script that deletes all keys
+        let commands: Vec<String> = hklm_keys
+            .iter()
+            .map(|key| format!("reg delete \"{}\" /f", key))
+            .collect();
+        let script = commands.join("; ");
+
+        let output = Command::new("powershell")
+            .args([
+                "-NoProfile", "-Command",
+                &format!(
+                    "Start-Process powershell.exe -ArgumentList '-NoProfile -Command {}' -Verb RunAs -Wait -WindowStyle Hidden",
+                    script.replace('\'', "''").replace('"', "'\\\"'")
+                ),
+            ])
+            .output();
+
+        match output {
+            Ok(o) if o.status.success() => {
+                // Verify each key individually
+                for key in &hklm_keys {
+                    if !check_entry_exists(key).unwrap_or(true) {
+                        results.push((key.clone(), Ok("Removed".to_string())));
+                    } else {
+                        results.push((key.clone(), Err("Entry still exists after removal attempt".to_string())));
+                    }
+                }
+            }
+            Ok(_) => {
+                let msg = "Elevated removal failed or was cancelled".to_string();
+                for key in &hklm_keys {
+                    results.push((key.clone(), Err(msg.clone())));
+                }
+            }
+            Err(e) => {
+                let msg = format!("Failed to launch elevated process: {}", e);
+                for key in &hklm_keys {
+                    results.push((key.clone(), Err(msg.clone())));
+                }
+            }
+        }
+    }
+
+    // Return results in the original order
+    registry_keys
+        .iter()
+        .map(|key| {
+            results
+                .iter()
+                .find(|(k, _)| k == key)
+                .map(|(_, r)| r.clone())
+                .unwrap_or_else(|| Err("Key not processed".to_string()))
+        })
+        .collect()
 }

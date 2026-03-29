@@ -102,8 +102,16 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Selection */
+  ::selection {
+    background: oklch(0.5 0.15 270 / 0.3);
   }
 
   /* Thin styled scrollbar */
@@ -115,10 +123,23 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.4 0 0);
+    background: oklch(0.35 0 0);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.55 0 0);
+    background: oklch(0.5 0 0);
+  }
+
+  /* Focus ring */
+  :focus-visible {
+    outline: 2px solid oklch(0.6 0.15 270);
+    outline-offset: 2px;
+  }
+
+  /* Window border — use outline to avoid adding to layout */
+  html {
+    outline: 1px solid oklch(0.2 0 0);
+    outline-offset: -1px;
+    overflow: hidden;
   }
 }

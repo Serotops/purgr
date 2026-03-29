@@ -5,7 +5,8 @@ import { SortHeader } from "@/components/SortHeader";
 import { AppRow } from "@/components/AppRow";
 import { DiskAnalysis } from "@/components/DiskAnalysis";
 import { useApps } from "@/hooks/useApps";
-import { Loader2, PackageX, Zap, Package, HardDrive } from "lucide-react";
+import { Loader2, PackageX, Package, HardDrive, Trash2 } from "lucide-react";
+import { Titlebar } from "@/components/Titlebar";
 import { Button } from "@/components/ui/button";
 import type { SortField } from "@/types";
 
@@ -29,6 +30,8 @@ function App() {
     scan,
     uninstallApp,
     removeRegistryEntry,
+    dismissAction,
+    bulkRemoveOrphans,
     activeActions,
     stats,
   } = useApps();
@@ -47,39 +50,32 @@ function App() {
   };
 
   return (
-    <TooltipProvider delayDuration={300}>
+    <TooltipProvider delayDuration={200}>
       <div className="h-screen flex flex-col bg-background">
-        {/* Header */}
-        <header className="flex-shrink-0 border-b bg-card">
-          <div className="px-6 pt-4 pb-3">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Zap className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <div className="flex-1">
-                <h1 className="text-lg font-semibold tracking-tight">Purgr</h1>
-                <p className="text-xs text-muted-foreground">
-                  Clean up your Windows apps
-                </p>
-              </div>
-            </div>
+        {/* Custom titlebar */}
+        <Titlebar />
 
+        {/* Header */}
+        <header className="flex-shrink-0 border-b bg-card/80 backdrop-blur-sm">
+          <div className="px-5 pt-3 pb-3">
             {/* Tabs */}
-            <div className="flex gap-1 mb-3">
-              <TabButton
-                active={activeTab === "apps"}
-                onClick={() => setActiveTab("apps")}
-                icon={<Package className="w-3.5 h-3.5" />}
-              >
-                Installed Apps
-              </TabButton>
-              <TabButton
-                active={activeTab === "disk"}
-                onClick={() => setActiveTab("disk")}
-                icon={<HardDrive className="w-3.5 h-3.5" />}
-              >
-                Disk Analysis
-              </TabButton>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex gap-0.5 bg-muted/50 rounded-lg p-0.5">
+                <TabButton
+                  active={activeTab === "apps"}
+                  onClick={() => setActiveTab("apps")}
+                  icon={<Package className="w-3.5 h-3.5" />}
+                >
+                  Installed Apps
+                </TabButton>
+                <TabButton
+                  active={activeTab === "disk"}
+                  onClick={() => setActiveTab("disk")}
+                  icon={<HardDrive className="w-3.5 h-3.5" />}
+                >
+                  Disk Analysis
+                </TabButton>
+              </div>
             </div>
 
             {/* Toolbar (only for apps tab) */}
@@ -107,23 +103,37 @@ function App() {
                 onSort={handleSort}
               />
             )}
+            {stats.orphans > 0 && filterStatus === "orphan" && (
+              <div className="flex-shrink-0 border-b px-5 py-2 bg-destructive/5">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={bulkRemoveOrphans}
+                >
+                  <Trash2 className="w-3 h-3 mr-1.5" />
+                  Remove All {stats.orphans} Orphan Entries
+                </Button>
+              </div>
+            )}
             <div className="flex-1 min-h-0 overflow-y-auto">
-              <div className="px-4 py-2 space-y-1.5">
+              <div className="px-3 py-2 space-y-1">
                 {loading && apps.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-                    <Loader2 className="w-8 h-8 animate-spin mb-3" />
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                    <Loader2 className="w-7 h-7 animate-spin mb-3 text-primary" />
                     <p className="text-sm">Scanning Windows registry...</p>
+                    <p className="text-xs mt-1 text-muted-foreground/60">This may take a few seconds</p>
                   </div>
                 ) : error ? (
-                  <div className="flex flex-col items-center justify-center py-20">
+                  <div className="flex flex-col items-center justify-center py-16">
                     <div className="text-destructive text-sm mb-3">{error}</div>
                     <Button variant="outline" size="sm" onClick={scan}>
                       Retry
                     </Button>
                   </div>
                 ) : apps.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-                    <PackageX className="w-10 h-10 mb-3 opacity-40" />
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                    <PackageX className="w-10 h-10 mb-3 opacity-30" />
                     <p className="text-sm">
                       {search || filterStatus !== "all"
                         ? "No apps match your filters"
@@ -138,6 +148,7 @@ function App() {
                       action={activeActions.get(app.registry_key)}
                       onUninstall={uninstallApp}
                       onRemoveEntry={removeRegistryEntry}
+                      onDismiss={dismissAction}
                     />
                   ))
                 )}
@@ -149,13 +160,15 @@ function App() {
         )}
 
         {/* Footer */}
-        <footer className="flex-shrink-0 border-t px-6 py-2 text-[11px] text-muted-foreground flex items-center justify-between">
+        <footer className="flex-shrink-0 border-t bg-card/50 px-5 py-1.5 text-[11px] text-muted-foreground/70 flex items-center justify-between">
           <span>
-            {stats.total > 0
-              ? `${stats.total} apps found — ${stats.orphans} orphan${stats.orphans !== 1 ? "s" : ""} detected`
+            {loading
+              ? "Scanning..."
+              : stats.total > 0
+              ? `${stats.total} apps \u00b7 ${stats.orphans} orphan${stats.orphans !== 1 ? "s" : ""}`
               : "Ready"}
           </span>
-          <span>Purgr v0.1.0</span>
+          <span className="text-muted-foreground/40">v0.1.0</span>
         </footer>
       </div>
     </TooltipProvider>
@@ -176,10 +189,10 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
         active
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          ? "bg-background text-foreground shadow-sm"
+          : "text-muted-foreground hover:text-foreground"
       }`}
     >
       {icon}

@@ -56,7 +56,7 @@ export function useApps() {
           : "Uninstaller is running...",
       });
 
-      const uninstallCmd = app.quiet_uninstall_string || app.uninstall_string;
+      const uninstallCmd = app.uninstall_string || app.quiet_uninstall_string;
       await invoke<string>("uninstall_app", { uninstallString: uninstallCmd });
 
       // Phase 2: Poll registry to verify removal
@@ -94,8 +94,22 @@ export function useApps() {
         setTimeout(() => setAction(key, null), 3000);
       }
     } catch (e) {
-      setAction(key, { registryKey: key, status: "error", message: String(e) });
-      setTimeout(() => setAction(key, null), 4000);
+      const errMsg = String(e);
+      const isBrokenPath = errMsg.includes("not found") ||
+        errMsg.includes("not recognized") ||
+        errMsg.includes("cannot find") ||
+        errMsg.includes("The system cannot find");
+
+      if (isBrokenPath) {
+        setAction(key, {
+          registryKey: key,
+          status: "error",
+          message: "Uninstaller not found — use 'Remove Registry Entry' to clean up this entry",
+        });
+      } else {
+        setAction(key, { registryKey: key, status: "error", message: errMsg });
+      }
+      // Don't auto-clear errors — let the user see them
     }
   }, [scan, setAction]);
 
@@ -112,6 +126,49 @@ export function useApps() {
       setTimeout(() => setAction(key, null), 4000);
     }
   }, [setAction]);
+
+  const dismissAction = useCallback((registryKey: string) => {
+    setAction(registryKey, null);
+  }, [setAction]);
+
+  const bulkRemoveOrphans = useCallback(async () => {
+    const orphans = apps.filter((a) => a.is_orphan);
+    if (orphans.length === 0) return;
+
+    const keys = orphans.map((a) => a.registry_key);
+
+    // Show loading state on all orphans
+    for (const key of keys) {
+      setAction(key, { registryKey: key, status: "uninstalling", message: "Removing registry entries..." });
+    }
+
+    try {
+      // Single bulk call — one UAC prompt for all HKLM keys
+      const results = await invoke<(string | { Err: string })[]>("bulk_remove_registry_entries", { registryKeys: keys });
+
+      const removed: string[] = [];
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const result = results[i];
+        if (typeof result === "string" || (result && "Ok" in (result as Record<string, unknown>))) {
+          setAction(key, { registryKey: key, status: "done", message: "Registry entry removed" });
+          removed.push(key);
+          setTimeout(() => setAction(key, null), 2000);
+        } else {
+          const errMsg = typeof result === "object" && result && "Err" in (result as Record<string, unknown>)
+            ? String((result as Record<string, string>).Err)
+            : "Unknown error";
+          setAction(key, { registryKey: key, status: "error", message: errMsg });
+        }
+      }
+      setApps((prev) => prev.filter((a) => !removed.includes(a.registry_key)));
+    } catch (e) {
+      // If the whole call fails, mark all as error
+      for (const key of keys) {
+        setAction(key, { registryKey: key, status: "error", message: String(e) });
+      }
+    }
+  }, [apps, setAction]);
 
   const filteredApps = useMemo(() => {
     let result = apps;
@@ -176,6 +233,8 @@ export function useApps() {
     scan,
     uninstallApp,
     removeRegistryEntry,
+    dismissAction,
+    bulkRemoveOrphans,
     activeActions,
     stats,
   };

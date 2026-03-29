@@ -8,24 +8,20 @@ interface SortHeaderProps {
 }
 
 export function SortHeader({ sortField, sortDirection, onSort }: SortHeaderProps) {
-  const handleSort = (field: SortField) => {
-    onSort(field);
-  };
-
   return (
-    <div className="flex items-center gap-3 px-4 py-2 text-xs text-muted-foreground border-b">
-      <div className="w-9" /> {/* Icon spacer */}
-      <SortButton field="name" current={sortField} direction={sortDirection} onClick={handleSort} className="flex-1">
+    <div className="flex items-center gap-3 px-5 py-1.5 text-[11px] text-muted-foreground/60 border-b bg-muted/20">
+      <div className="w-9" />
+      <SortButton field="name" current={sortField} direction={sortDirection} onClick={onSort} className="flex-1">
         Name
       </SortButton>
-      <SortButton field="publisher" current={sortField} direction={sortDirection} onClick={handleSort} className="hidden sm:flex w-24 justify-end">
+      <SortButton field="publisher" current={sortField} direction={sortDirection} onClick={onSort} className="hidden sm:flex w-24 justify-end">
         Version
       </SortButton>
-      <SortButton field="size" current={sortField} direction={sortDirection} onClick={handleSort} className="hidden md:flex w-20 justify-end">
+      <SortButton field="size" current={sortField} direction={sortDirection} onClick={onSort} className="hidden md:flex w-20 justify-end">
         Size
       </SortButton>
-      <div className="w-7" /> {/* Action spacer */}
-      <div className="w-4" /> {/* Chevron spacer */}
+      <div className="w-7" />
+      <div className="w-4" />
     </div>
   );
 }
@@ -49,8 +45,8 @@ function SortButton({
   return (
     <button
       onClick={() => onClick(field)}
-      className={`inline-flex items-center gap-1 hover:text-foreground transition-colors ${
-        isActive ? "text-foreground font-medium" : ""
+      className={`inline-flex items-center gap-1 hover:text-foreground transition-colors duration-200 ${
+        isActive ? "text-foreground/80 font-medium" : ""
       } ${className}`}
     >
       {children}
@@ -61,7 +57,7 @@ function SortButton({
           <ArrowDown className="w-3 h-3" />
         )
       ) : (
-        <ArrowUpDown className="w-3 h-3 opacity-40" />
+        <ArrowUpDown className="w-3 h-3 opacity-30" />
       )}
     </button>
   );

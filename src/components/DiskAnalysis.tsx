@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import type { DirEntry, DriveInfo } from "@/types";
 import { useDiskScan } from "@/hooks/useDiskScan";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,18 @@ function ContextMenu({
       className="fixed z-[9999] bg-popover border border-border rounded-lg shadow-xl py-1 min-w-[180px]"
       style={{ left: state.x, top: state.y }}
     >
+      {state.entry.path && (
+        <button
+          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-muted transition-colors"
+          onClick={() => {
+            revealItemInDir(state.entry.path);
+            onClose();
+          }}
+        >
+          <FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />
+          <span>Open in Explorer</span>
+        </button>
+      )}
       <button
         className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-muted transition-colors disabled:opacity-40 disabled:pointer-events-none"
         onClick={() => {
@@ -114,6 +127,7 @@ export function DiskAnalysis() {
     progress,
     progressMsg,
     removeEntry,
+    rescanCurrent,
   } = useDiskScan();
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -148,12 +162,14 @@ export function DiskAnalysis() {
       await invoke<string>("delete_path", { path: confirmDelete.path });
       removeEntry(confirmDelete.path, confirmDelete.size);
       setConfirmDelete(null);
+      // Rescan to get accurate disk state after deletion
+      rescanCurrent();
     } catch (e) {
       setDeleteError(String(e));
     } finally {
       setDeleting(false);
     }
-  }, [confirmDelete, removeEntry]);
+  }, [confirmDelete, removeEntry, rescanCurrent]);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">

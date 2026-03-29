@@ -215,6 +215,11 @@ fn refresh_app_status(install_location: String) -> Result<bool, String> {
     Ok(std::path::Path::new(&install_location).exists())
 }
 
+#[tauri::command]
+fn bulk_remove_registry_entries(registry_keys: Vec<String>) -> Vec<Result<String, String>> {
+    registry::bulk_remove_registry_entries(&registry_keys)
+}
+
 // ── File operations ──────────────────────────────────────────────────────────
 
 #[tauri::command]
@@ -224,24 +229,22 @@ async fn delete_path(path: String) -> Result<String, String> {
         if !target.exists() {
             return Ok("Already deleted".to_string());
         }
-        if target.is_dir() {
-            std::fs::remove_dir_all(target).map_err(|e| {
-                if e.raw_os_error() == Some(5) {
-                    format!("Access denied — try running as administrator")
-                } else {
-                    format!("Failed to delete folder: {}", e)
-                }
-            })?;
+
+        let result = if target.is_dir() {
+            std::fs::remove_dir_all(target)
         } else {
-            std::fs::remove_file(target).map_err(|e| {
-                if e.raw_os_error() == Some(5) {
-                    format!("Access denied — try running as administrator")
-                } else {
-                    format!("Failed to delete file: {}", e)
-                }
-            })?;
+            std::fs::remove_file(target)
+        };
+
+        match result {
+            Ok(()) => Ok(format!("Deleted: {}", path)),
+            Err(e) if e.raw_os_error() == Some(5) => {
+                // Access denied — in dev mode we're not elevated, so give a clear message.
+                // In release builds the app runs as admin so this shouldn't happen.
+                Err("Access denied — this file is protected or in use by another program. Close any programs using it and try again.".to_string())
+            }
+            Err(e) => Err(format!("Failed to delete: {}", e)),
         }
-        Ok(format!("Deleted: {}", path))
     })
     .await
     .map_err(|e| format!("Task join error: {}", e))?
@@ -326,6 +329,7 @@ pub fn run() {
             uninstall_app,
             check_app_installed,
             remove_registry_entry,
+            bulk_remove_registry_entries,
             refresh_app_status,
             delete_path,
             list_drives,

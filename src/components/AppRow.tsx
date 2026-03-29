@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import type { InstalledApp } from "@/types";
 import type { AppAction } from "@/hooks/useApps";
 import { Badge } from "@/components/ui/badge";
@@ -19,12 +20,13 @@ import {
 import {
   Trash2,
   FolderX,
+  FolderOpen,
   Package,
   ChevronDown,
-  ChevronUp,
   Loader2,
   CheckCircle2,
   XCircle,
+  X,
 } from "lucide-react";
 
 function formatSize(kb: number): string {
@@ -41,9 +43,10 @@ interface AppRowProps {
   action: AppAction | undefined;
   onUninstall: (app: InstalledApp) => void;
   onRemoveEntry: (app: InstalledApp) => void;
+  onDismiss: (registryKey: string) => void;
 }
 
-export function AppRow({ app, action, onUninstall, onRemoveEntry }: AppRowProps) {
+export function AppRow({ app, action, onUninstall, onRemoveEntry, onDismiss }: AppRowProps) {
   const [expanded, setExpanded] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<"uninstall" | "remove" | null>(null);
 
@@ -61,34 +64,34 @@ export function AppRow({ app, action, onUninstall, onRemoveEntry }: AppRowProps)
   return (
     <>
       <div
-        className={`group border rounded-lg transition-all hover:shadow-sm ${
+        className={`group rounded-lg transition-all duration-200 ${
           isBusy
-            ? "border-yellow-500/30 bg-yellow-500/5"
+            ? "bg-yellow-500/5 ring-1 ring-yellow-500/20"
             : action?.status === "done"
-            ? "border-green-500/30 bg-green-500/5"
+            ? "bg-green-500/5 ring-1 ring-green-500/20"
             : action?.status === "error"
-            ? "border-destructive/40 bg-destructive/10"
+            ? "bg-destructive/5 ring-1 ring-destructive/30"
             : app.is_orphan
-            ? "border-destructive/30 bg-destructive/5"
-            : "border-border bg-card"
+            ? "bg-destructive/5 ring-1 ring-destructive/20"
+            : "hover:bg-muted/40"
         }`}
       >
         {/* Main row */}
         <div
-          className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
+          className="flex items-center gap-3 px-3 py-2.5 cursor-pointer select-none"
           onClick={() => !isBusy && setExpanded(!expanded)}
         >
           {/* Icon / Status indicator */}
-          <div className={`flex-shrink-0 w-9 h-9 rounded-md flex items-center justify-center ${
+          <div className={`flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center transition-colors duration-200 ${
             isBusy
-              ? "bg-yellow-500/10 text-yellow-600"
+              ? "bg-yellow-500/10 text-yellow-500"
               : action?.status === "done"
-              ? "bg-green-500/10 text-green-600"
+              ? "bg-green-500/10 text-green-500"
               : action?.status === "error"
               ? "bg-destructive/10 text-destructive"
               : app.is_orphan
-              ? "bg-destructive/10 text-destructive"
-              : "bg-muted text-muted-foreground"
+              ? "bg-destructive/10 text-destructive/70"
+              : "bg-muted/60 text-muted-foreground/60"
           }`}>
             {isBusy ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -153,6 +156,35 @@ export function AppRow({ app, action, onUninstall, onRemoveEntry }: AppRowProps)
             </div>
           )}
 
+          {/* Error action: offer registry cleanup */}
+          {action?.status === "error" && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs flex-shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmDialog("remove");
+                }}
+              >
+                <FolderX className="w-3 h-3 mr-1.5" />
+                Remove Entry
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDismiss(app.registry_key);
+                }}
+              >
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </>
+          )}
+
           {/* Actions */}
           {!isBusy && !action && (
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -196,12 +228,8 @@ export function AppRow({ app, action, onUninstall, onRemoveEntry }: AppRowProps)
 
           {/* Expand chevron */}
           {!action && (
-            <div className="text-muted-foreground">
-              {expanded ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
+            <div className="text-muted-foreground/40 transition-transform duration-200" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }}>
+              <ChevronDown className="w-3.5 h-3.5" />
             </div>
           )}
         </div>
@@ -217,8 +245,8 @@ export function AppRow({ app, action, onUninstall, onRemoveEntry }: AppRowProps)
 
         {/* Expanded details */}
         {expanded && !action && (
-          <div className="px-4 pb-3 pt-0 border-t border-border/50">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 mt-3 text-xs">
+          <div className="px-3 pb-3 pt-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 mt-2 text-xs">
               <Detail label="Version" value={app.version} />
               <Detail label="Publisher" value={app.publisher} />
               <Detail label="Install Location" value={app.install_location} />
@@ -226,7 +254,18 @@ export function AppRow({ app, action, onUninstall, onRemoveEntry }: AppRowProps)
               <Detail label="Size" value={formatSize(app.estimated_size_kb)} />
               <Detail label="Registry Key" value={app.registry_key} mono />
             </div>
-            <div className="flex gap-2 mt-3">
+            <div className="flex gap-2 mt-3 flex-wrap">
+              {app.install_location && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => revealItemInDir(app.install_location)}
+                >
+                  <FolderOpen className="w-3 h-3 mr-1.5" />
+                  Open Location
+                </Button>
+              )}
               {app.uninstall_string && !app.is_orphan && (
                 <Button
                   variant="destructive"

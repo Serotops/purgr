@@ -135,19 +135,27 @@ export function useDiskScan() {
     []
   );
 
-  // Remove a deleted entry from the tree and update sizes up the breadcrumb
+  // Remove a deleted entry from the tree and propagate size reduction upward
   const removeEntry = useCallback((deletedPath: string, deletedSize: number) => {
-    const removeFromTree = (node: DirEntry): DirEntry => ({
-      ...node,
-      children: node.children
+    const removeFromTree = (node: DirEntry): DirEntry => {
+      const hadDirectChild = node.children.some((c) => c.path === deletedPath);
+      const newChildren = node.children
         .filter((c) => c.path !== deletedPath)
-        .map((c) => c.is_dir ? removeFromTree(c) : c),
-      size: node.size - (
-        node.children.some((c) => c.path === deletedPath) ? deletedSize : 0
-      ),
-    });
+        .map((c) => (c.is_dir ? removeFromTree(c) : c));
 
-    // Update breadcrumb entries (each level needs size adjustment)
+      let newSize = node.size;
+      if (hadDirectChild) {
+        newSize -= deletedSize;
+      } else {
+        // Propagate size reduction from deeper levels
+        const oldChildTotal = node.children.reduce((s, c) => s + c.size, 0);
+        const newChildTotal = newChildren.reduce((s, c) => s + c.size, 0);
+        newSize -= oldChildTotal - newChildTotal;
+      }
+
+      return { ...node, children: newChildren, size: Math.max(0, newSize) };
+    };
+
     setBreadcrumb((prev) => {
       const updated = prev.map((entry) => removeFromTree(entry));
       const last = updated[updated.length - 1];
@@ -155,6 +163,30 @@ export function useDiskScan() {
       return updated;
     });
   }, []);
+
+  // Rescan the current directory to get fresh data from disk
+  const rescanCurrent = useCallback(async () => {
+    const current = breadcrumb[breadcrumb.length - 1];
+    if (!current?.path) return;
+
+    setScanning(true);
+    try {
+      const result = await invoke<DirEntry>("scan_directory", {
+        path: current.path,
+        maxDepth: 3,
+      });
+      setBreadcrumb((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = result;
+        return updated;
+      });
+      setCurrentEntry(result);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setScanning(false);
+    }
+  }, [breadcrumb]);
 
   return {
     drives,
@@ -172,5 +204,6 @@ export function useDiskScan() {
     progress,
     progressMsg,
     removeEntry,
+    rescanCurrent,
   };
 }
