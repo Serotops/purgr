@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, RefreshCw } from "lucide-react";
+import { useI18n } from "@/hooks/useI18n";
 import type { FilterStatus } from "@/types";
 
 interface ToolbarProps {
@@ -23,14 +24,15 @@ export function Toolbar({
   loading,
   stats,
 }: ToolbarProps) {
+  const { t } = useI18n();
+
   return (
     <div className="flex flex-col gap-2.5">
-      {/* Search + Refresh */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
           <Input
-            placeholder="Search by name or publisher..."
+            placeholder={t("toolbar.search")}
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-8 h-8 text-xs bg-muted/30 border-transparent focus:border-primary/30 focus:bg-muted/50 transition-all duration-200"
@@ -47,21 +49,12 @@ export function Toolbar({
         </Button>
       </div>
 
-      {/* Filters */}
       <div className="flex gap-1">
-        <FilterButton
-          active={filterStatus === "all"}
-          onClick={() => onFilterChange("all")}
-          count={stats.total}
-        >
-          All
+        <FilterButton active={filterStatus === "all"} onClick={() => onFilterChange("all")} count={stats.total}>
+          {t("toolbar.all")}
         </FilterButton>
-        <FilterButton
-          active={filterStatus === "installed"}
-          onClick={() => onFilterChange("installed")}
-          count={stats.installed}
-        >
-          Installed
+        <FilterButton active={filterStatus === "installed"} onClick={() => onFilterChange("installed")} count={stats.installed}>
+          {t("toolbar.installed")}
         </FilterButton>
         <FilterButton
           active={filterStatus === "orphan"}
@@ -69,7 +62,7 @@ export function Toolbar({
           count={stats.orphans}
           variant={stats.orphans > 0 ? "warning" : "default"}
         >
-          Orphans
+          {t("toolbar.orphans")}
         </FilterButton>
       </div>
     </div>
@@ -77,17 +70,10 @@ export function Toolbar({
 }
 
 function FilterButton({
-  active,
-  onClick,
-  children,
-  count,
-  variant = "default",
+  active, onClick, children, count, variant = "default",
 }: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-  count: number;
-  variant?: "default" | "warning";
+  active: boolean; onClick: () => void; children: React.ReactNode;
+  count: number; variant?: "default" | "warning";
 }) {
   return (
     <button

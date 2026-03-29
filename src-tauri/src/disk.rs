@@ -232,7 +232,7 @@ pub fn scan_fast_with_progress(
         }
     }
 
-    on_progress(0.0, &format!("Scanning {} folders...", total_dirs));
+    on_progress(0.0, &format!("scan_folders:{}", total_dirs));
 
     // Scan subdirectories in parallel, reporting progress
     let mut children: Vec<DirEntry> = dirs
@@ -242,7 +242,7 @@ pub fn scan_fast_with_progress(
             let result = scan_fast_recursive(&child_path, &d.name, max_depth.saturating_sub(1));
             let done = completed.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
             let pct = (done as f64 / total_dirs.max(1) as f64) * 100.0;
-            on_progress(pct, &format!("Scanned {}/{} folders", done, total_dirs));
+            on_progress(pct, &format!("scanned_folders:{}/{}", done, total_dirs));
             result
         })
         .collect();
@@ -543,7 +543,7 @@ pub fn scan_mft(
     }
 
     // 4. Read and parse all MFT records in batches
-    on_progress(0.0, "Reading MFT records...");
+    on_progress(0.0, "reading_mft");
 
     let batch_count = 4096;
     let mut buffer = vec![0u8; record_size * batch_count];
@@ -591,7 +591,7 @@ pub fn scan_mft(
             let phase_pct = (pct as f64) * 0.8; // MFT read = 0-80%
             on_progress(
                 phase_pct,
-                &format!("Reading MFT... {}% ({} records)", pct, record_num),
+                &format!("reading_mft_progress:{}:{}", pct, record_num),
             );
         }
     }
@@ -600,7 +600,7 @@ pub fn scan_mft(
         CloseHandle(handle);
     }
 
-    on_progress(80.0, "Building directory tree...");
+    on_progress(80.0, "building_tree");
 
     // 5. Build tree from parent references
     build_tree_from_entries(entries, drive_letter)

@@ -1,0 +1,118 @@
+{
+  "tabs": {
+    "installedApps": "Applications",
+    "diskAnalysis": "Analyse disque"
+  },
+  "toolbar": {
+    "search": "Rechercher par nom ou éditeur...",
+    "all": "Tout",
+    "installed": "Installées",
+    "orphans": "Orphelines",
+    "total": "total"
+  },
+  "sort": {
+    "name": "Nom",
+    "version": "Version",
+    "size": "Taille"
+  },
+  "apps": {
+    "scanning": "Analyse du registre Windows...",
+    "scanningHint": "Cela peut prendre quelques secondes",
+    "noMatch": "Aucune application ne correspond",
+    "noApps": "Aucune application trouvée",
+    "orphan": "Orpheline",
+    "uninstalling": "Désinstallation",
+    "verifying": "Vérification",
+    "removed": "Supprimée",
+    "failed": "Échec",
+    "pending": "En attente",
+    "uninstall": "Désinstaller",
+    "removeEntry": "Supprimer l'entrée",
+    "removeRegistryEntry": "Supprimer l'entrée du registre",
+    "openLocation": "Ouvrir l'emplacement",
+    "recheck": "Revérifier",
+    "removeAllOrphans": "Supprimer les {count} entrées orphelines",
+    "showingOf": "Affichage de {filtered} sur {total} applications"
+  },
+  "disk": {
+    "title": "Analyse disque",
+    "selectDrive": "Sélectionnez un disque ci-dessus pour analyser l'utilisation.",
+    "scanning": "Analyse de {drive}\\...",
+    "readingStructure": "Lecture de la structure...",
+    "startingScan": "Démarrage de l'analyse...",
+    "scanningFolder": "Analyse du dossier...",
+    "free": "libre",
+    "files": "fichiers",
+    "folders": "dossiers",
+    "drillDown": "Double-cliquez pour explorer",
+    "openInExplorer": "Ouvrir dans l'explorateur",
+    "deleteFolder": "Supprimer le dossier",
+    "deleteFile": "Supprimer le fichier",
+    "scanFolders": "Analyse de {count} dossiers...",
+    "scannedFolders": "{done}/{total} dossiers analysés",
+    "readingMft": "Lecture des enregistrements MFT...",
+    "readingMftProgress": "Lecture MFT... {pct}% ({records} enregistrements)",
+    "buildingTree": "Construction de l'arborescence..."
+  },
+  "delete": {
+    "title": "Supprimer {type}",
+    "folder": "Dossier",
+    "file": "Fichier",
+    "confirm": "Êtes-vous sûr de vouloir supprimer définitivement « {name} » ?",
+    "freeUp": "Cela libérera {size}.",
+    "button": "Supprimer",
+    "cancel": "Annuler",
+    "deleted": "Supprimé : {name}"
+  },
+  "uninstall": {
+    "title": "Désinstaller",
+    "confirm": "Êtes-vous sûr de vouloir désinstaller « {name} » ? Le programme de désinstallation sera lancé.",
+    "removeTitle": "Supprimer l'entrée du registre",
+    "removeConfirm": "Êtes-vous sûr de vouloir supprimer l'entrée du registre pour « {name} » ? Cela ne supprime aucun fichier.",
+    "button": "Confirmer",
+    "cancel": "Annuler",
+    "waitingExternal": "En attente du désinstallateur externe...",
+    "running": "Désinstallation en cours...",
+    "verifying": "Vérification de la suppression...",
+    "success": "Désinstallation réussie",
+    "pendingMessage": "Désinstallation terminée — cliquez sur Revérifier pour confirmer",
+    "stillInRegistry": "Toujours dans le registre — réessayez ou supprimez l'entrée manuellement"
+  },
+  "bulkRemove": {
+    "title": "Supprimer toutes les entrées orphelines",
+    "confirm": "Cela supprimera {count} entrées orphelines du registre. Ces entrées correspondent à des applications qui ne sont plus installées. Cette action est irréversible.",
+    "button": "Supprimer {count} entrées",
+    "success": "{count} entrées orphelines supprimées"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "theme": "Thème",
+    "light": "Clair",
+    "dark": "Sombre",
+    "system": "Système",
+    "language": "Langue",
+    "about": "Un gestionnaire d'applications Windows moderne et analyseur de disque. Nettoyez les applications, supprimez les entrées orphelines et visualisez l'utilisation du disque.",
+    "sourceCode": "Code source",
+    "reportIssue": "Signaler un problème",
+    "madeBy": "Créé par",
+    "builtWith": "Fait avec Tauri + React + Rust"
+  },
+  "footer": {
+    "scanning": "Analyse...",
+    "ready": "Prêt",
+    "apps": "applications",
+    "orphan": "orpheline",
+    "orphans": "orphelines"
+  },
+  "errors": {
+    "retry": "Réessayer",
+    "accessDenied": "Accès refusé — ce fichier est protégé ou utilisé par un autre programme. Fermez les programmes concernés et réessayez.",
+    "cancelled": "Suppression annulée",
+    "somethingWrong": "Une erreur est survenue",
+    "notAffected": "Purgr a rencontré une erreur inattendue. Votre système n'a pas été affecté.",
+    "reloadApp": "Recharger l'application"
+  },
+  "toast": {
+    "error": "Erreur"
+  }
+}

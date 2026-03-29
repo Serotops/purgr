@@ -10,6 +10,7 @@ import { ToastContainer, showToast } from "@/components/Toast";
 import { useApps } from "@/hooks/useApps";
 import { Titlebar } from "@/components/Titlebar";
 import { SettingsDialog, useTheme } from "@/components/Settings";
+import { useI18n } from "@/hooks/useI18n";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +66,7 @@ function App() {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { theme, setTheme } = useTheme();
+  const { t } = useI18n();
 
   const {
     apps,
@@ -159,7 +161,7 @@ function App() {
   const handleBulkRemove = async () => {
     setBulkConfirm(false);
     await bulkRemoveOrphans();
-    showToast(`Removed ${stats.orphans} orphan entries`, "success");
+    showToast(t("bulkRemove.success", { count: String(stats.orphans) }), "success");
   };
 
   const showingFiltered = stats.filteredCount !== stats.total;
@@ -179,21 +181,21 @@ function App() {
                   onClick={() => setActiveTab("apps")}
                   icon={<Package className="w-3.5 h-3.5" />}
                 >
-                  Installed Apps
+                  {t("tabs.installedApps")}
                 </TabButton>
                 <TabButton
                   active={activeTab === "disk"}
                   onClick={() => setActiveTab("disk")}
                   icon={<HardDrive className="w-3.5 h-3.5" />}
                 >
-                  Disk Analysis
+                  {t("tabs.diskAnalysis")}
                 </TabButton>
               </div>
 
               {/* Total size badge */}
               {activeTab === "apps" && stats.totalSizeKb > 0 && (
                 <span className="text-[11px] text-muted-foreground/60 ml-auto">
-                  {formatSizeKb(stats.totalSizeKb)} total
+                  {formatSizeKb(stats.totalSizeKb)} {t("toolbar.total")}
                 </span>
               )}
             </div>
@@ -231,7 +233,7 @@ function App() {
                   onClick={() => setBulkConfirm(true)}
                 >
                   <Trash2 className="w-3 h-3 mr-1.5" />
-                  Remove All {stats.orphans} Orphan Entries
+                  {t("apps.removeAllOrphans", { count: String(stats.orphans) })}
                 </Button>
               </div>
             )}
@@ -239,28 +241,28 @@ function App() {
             {/* Showing X of Y indicator */}
             {showingFiltered && apps.length > 0 && (
               <div className="flex-shrink-0 px-5 py-1 text-[11px] text-muted-foreground/50 border-b">
-                Showing {stats.filteredCount} of {stats.total} apps
+                {t("apps.showingOf", { filtered: String(stats.filteredCount), total: String(stats.total) })}
               </div>
             )}
 
             {loading && apps.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
                 <Loader2 className="w-7 h-7 animate-spin mb-3 text-primary" />
-                <p className="text-sm">Scanning Windows registry...</p>
-                <p className="text-xs mt-1 text-muted-foreground/60">This may take a few seconds</p>
+                <p className="text-sm">{t("apps.scanning")}</p>
+                <p className="text-xs mt-1 text-muted-foreground/60">{t("apps.scanningHint")}</p>
               </div>
             ) : error ? (
               <div className="flex-1 flex flex-col items-center justify-center">
                 <div className="text-destructive text-sm mb-3">{error}</div>
-                <Button variant="outline" size="sm" onClick={scan}>Retry</Button>
+                <Button variant="outline" size="sm" onClick={scan}>{t("errors.retry")}</Button>
               </div>
             ) : apps.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
                 <PackageX className="w-10 h-10 mb-3 opacity-30" />
                 <p className="text-sm">
                   {search || filterStatus !== "all"
-                    ? "No apps match your filters"
-                    : "No apps found"}
+                    ? t("apps.noMatch")
+                    : t("apps.noApps")}
                 </p>
               </div>
             ) : (
@@ -298,10 +300,10 @@ function App() {
         <footer className="flex-shrink-0 border-t bg-card/50 px-5 py-1.5 text-[11px] text-muted-foreground/70 flex items-center justify-between">
           <span>
             {loading
-              ? "Scanning..."
+              ? t("footer.scanning")
               : stats.total > 0
-              ? `${stats.total} apps \u00b7 ${stats.orphans} orphan${stats.orphans !== 1 ? "s" : ""}`
-              : "Ready"}
+              ? `${stats.total} ${t("footer.apps")} \u00b7 ${stats.orphans} ${stats.orphans !== 1 ? t("footer.orphans") : t("footer.orphan")}`
+              : t("footer.ready")}
           </span>
           <span className="text-muted-foreground/40">v0.1.0</span>
         </footer>
@@ -310,16 +312,16 @@ function App() {
         <Dialog open={bulkConfirm} onOpenChange={setBulkConfirm}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Remove All Orphan Entries</DialogTitle>
+              <DialogTitle>{t("bulkRemove.title")}</DialogTitle>
               <DialogDescription>
-                This will remove {stats.orphans} orphan registry entries. These are entries for apps that are no longer installed on your system. This action cannot be undone.
+                {t("bulkRemove.confirm", { count: String(stats.orphans) })}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setBulkConfirm(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setBulkConfirm(false)}>{t("delete.cancel")}</Button>
               <Button variant="destructive" onClick={handleBulkRemove}>
                 <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                Remove {stats.orphans} Entries
+                {t("bulkRemove.button", { count: String(stats.orphans) })}
               </Button>
             </DialogFooter>
           </DialogContent>

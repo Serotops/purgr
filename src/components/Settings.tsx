@@ -5,8 +5,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Sun, Moon, Monitor, ExternalLink, Shield } from "lucide-react";
+import { Sun, Moon, Monitor, ExternalLink, Shield, Globe } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { useI18n } from "@/hooks/useI18n";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Theme = "light" | "dark" | "system";
 
@@ -25,7 +33,6 @@ function applyTheme(theme: Theme) {
   localStorage.setItem("purgr-theme", theme);
 }
 
-// Apply theme on load (before React renders)
 applyTheme(getStoredTheme());
 
 export function useTheme() {
@@ -35,7 +42,6 @@ export function useTheme() {
     applyTheme(theme);
   }, [theme]);
 
-  // Listen for system theme changes
   useEffect(() => {
     if (theme !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -44,11 +50,7 @@ export function useTheme() {
     return () => mq.removeEventListener("change", handler);
   }, [theme]);
 
-  const setTheme = (t: Theme) => {
-    setThemeState(t);
-  };
-
-  return { theme, setTheme };
+  return { theme, setTheme: setThemeState };
 }
 
 interface SettingsDialogProps {
@@ -59,44 +61,65 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ open, onOpenChange, theme, onThemeChange }: SettingsDialogProps) {
+  const { t, locale, setLocale, availableLocales } = useI18n();
+
   const themes: { value: Theme; label: string; icon: React.ReactNode }[] = [
-    { value: "light", label: "Light", icon: <Sun className="w-4 h-4" /> },
-    { value: "dark", label: "Dark", icon: <Moon className="w-4 h-4" /> },
-    { value: "system", label: "System", icon: <Monitor className="w-4 h-4" /> },
+    { value: "light", label: t("settings.light"), icon: <Sun className="w-4 h-4" /> },
+    { value: "dark", label: t("settings.dark"), icon: <Moon className="w-4 h-4" /> },
+    { value: "system", label: t("settings.system"), icon: <Monitor className="w-4 h-4" /> },
   ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
+          <DialogTitle>{t("settings.title")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {/* Theme */}
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block">Theme</label>
+            <label className="text-xs text-muted-foreground mb-2 block">{t("settings.theme")}</label>
             <div className="flex gap-1.5">
-              {themes.map((t) => (
+              {themes.map((th) => (
                 <button
-                  key={t.value}
-                  onClick={() => onThemeChange(t.value)}
+                  key={th.value}
+                  onClick={() => onThemeChange(th.value)}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                    theme === t.value
+                    theme === th.value
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
                   }`}
                 >
-                  {t.icon}
-                  {t.label}
+                  {th.icon}
+                  {th.label}
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Language */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-2 block">{t("settings.language")}</label>
+            <Select value={locale} onValueChange={setLocale}>
+              <SelectTrigger className="h-9 text-xs">
+                <Globe className="w-3.5 h-3.5 text-muted-foreground mr-1.5" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableLocales.map((lang) => (
+                  <SelectItem key={lang.code} value={lang.code} className="text-xs">
+                    {lang.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* About */}
           <div className="border-t pt-4">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-sm shadow-violet-500/20">
-                <Shield className="w-4.5 h-4.5 text-white" />
+                <Shield className="w-4 h-4 text-white" />
               </div>
               <div>
                 <p className="text-sm font-semibold">Purgr</p>
@@ -104,27 +127,21 @@ export function SettingsDialog({ open, onOpenChange, theme, onThemeChange }: Set
               </div>
             </div>
             <p className="text-xs text-muted-foreground mb-3">
-              A modern Windows app manager and disk analyzer. Clean up installed apps, remove orphan registry entries, and visualize disk usage.
+              {t("settings.about")}
             </p>
             <div className="flex flex-col gap-1.5">
-              <LinkButton
-                label="Source Code"
-                href="https://github.com/Serotops/purgr"
-              />
-              <LinkButton
-                label="Report an Issue"
-                href="https://github.com/Serotops/purgr/issues"
-              />
+              <LinkButton label={t("settings.sourceCode")} href="https://github.com/Serotops/purgr" />
+              <LinkButton label={t("settings.reportIssue")} href="https://github.com/Serotops/purgr/issues" />
             </div>
             <p className="text-[10px] text-muted-foreground/40 mt-3">
-              Made by{" "}
+              {t("settings.madeBy")}{" "}
               <button
                 onClick={() => openUrl("https://github.com/Serotops")}
                 className="text-muted-foreground/60 hover:text-foreground transition-colors"
               >
                 Serotops
               </button>
-              {" "}&middot; Built with Tauri + React + Rust
+              {" "}&middot; {t("settings.builtWith")}
             </p>
           </div>
         </div>

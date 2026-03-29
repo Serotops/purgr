@@ -9,7 +9,9 @@
       "Bash(pnpm approve-builds:*)",
       "Bash(npx tsc:*)",
       "Bash(cargo tree:*)",
-      "Bash(pnpm list:*)"
+      "Bash(pnpm list:*)",
+      "Bash(ls /mnt/c/Users/spark/Desktop/projects/purgr/src/components/ui/select*)",
+      "Bash(ls /mnt/c/Users/spark/Desktop/projects/purgr/src/components/ui/dropdown*)"
     ]
   }
 }
