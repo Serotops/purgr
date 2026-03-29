@@ -1,4 +1,5 @@
 mod disk;
+mod icons;
 mod registry;
 
 use std::process::Command;
@@ -227,6 +228,13 @@ fn bulk_remove_registry_entries(registry_keys: Vec<String>) -> Vec<Result<String
     registry::bulk_remove_registry_entries(&registry_keys)
 }
 
+// ── Icon extraction ──────────────────────────────────────────────────────────
+
+#[tauri::command]
+fn get_app_icon(icon_path: String) -> Option<String> {
+    icons::extract_icon_base64(&icon_path)
+}
+
 // ── File operations ──────────────────────────────────────────────────────────
 
 #[tauri::command]
@@ -338,6 +346,7 @@ pub fn run() {
             remove_registry_entry,
             bulk_remove_registry_entries,
             refresh_app_status,
+            get_app_icon,
             delete_path,
             list_drives,
             scan_directory,

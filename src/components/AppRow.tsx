@@ -2,6 +2,7 @@ import { useState } from "react";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import type { InstalledApp } from "@/types";
 import type { AppAction } from "@/hooks/useApps";
+import { useAppIcon } from "@/hooks/useAppIcon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -68,6 +69,8 @@ interface AppRowProps {
 }
 
 export function AppRow({ app, action, onUninstall, onRemoveEntry, onDismiss, onRecheck, selected, searchQuery = "", maxSize = 0, expanded: expandedProp, onToggleExpand }: AppRowProps) {
+  const appIcon = useAppIcon(app.icon_path);
+
   // Support both controlled (from parent) and uncontrolled (internal) expand state
   const [internalExpanded, setInternalExpanded] = useState(false);
   const expanded = expandedProp ?? internalExpanded;
@@ -125,7 +128,7 @@ export function AppRow({ app, action, onUninstall, onRemoveEntry, onDismiss, onR
           onClick={() => !isBusy && toggleExpand()}
         >
           {/* Icon / Status indicator */}
-          <div className={`flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center transition-colors duration-200 ${
+          <div className={`flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center transition-colors duration-200 overflow-hidden ${
             isBusy
               ? "bg-yellow-500/10 text-yellow-500"
               : action?.status === "done"
@@ -136,6 +139,8 @@ export function AppRow({ app, action, onUninstall, onRemoveEntry, onDismiss, onR
               ? "bg-yellow-500/10 text-yellow-500"
               : app.is_orphan
               ? "bg-destructive/10 text-destructive/70"
+              : appIcon
+              ? "bg-transparent"
               : "bg-muted/60 text-muted-foreground/60"
           }`}>
             {isBusy ? (
@@ -148,6 +153,8 @@ export function AppRow({ app, action, onUninstall, onRemoveEntry, onDismiss, onR
               <CheckCircle2 className="w-4 h-4" />
             ) : app.is_orphan ? (
               <FolderX className="w-4 h-4" />
+            ) : appIcon ? (
+              <img src={`data:image/png;base64,${appIcon}`} className="w-6 h-6" alt="" />
             ) : (
               <Package className="w-4 h-4" />
             )}
