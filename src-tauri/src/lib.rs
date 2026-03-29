@@ -2,6 +2,7 @@ mod disk;
 mod registry;
 
 use std::process::Command;
+use std::os::windows::process::CommandExt;
 use tauri::Emitter;
 
 #[tauri::command]
@@ -125,17 +126,23 @@ fn run_msiexec(uninstall_string: &str) -> Result<String, String> {
 
 /// Run a regular uninstall command, with elevation fallback
 fn run_command(uninstall_string: &str) -> Result<String, String> {
-    // cmd /C requires an extra set of outer quotes when the command itself
-    // contains quoted paths, e.g.: cmd /C ""C:\path\app.exe" --args"
-    let wrapped = if uninstall_string.contains('"') {
-        format!("\"{}\"", uninstall_string)
+    // If it starts with a quoted path, extract exe and args separately
+    // to avoid cmd /C quoting issues. Otherwise pass through cmd /C.
+    let output: std::io::Result<std::process::Output> = if uninstall_string.starts_with('"') {
+        if let Some(end_quote) = uninstall_string[1..].find('"') {
+            let exe = &uninstall_string[1..end_quote + 1];
+            let args = uninstall_string[end_quote + 2..].trim();
+            if args.is_empty() {
+                Command::new(exe).output()
+            } else {
+                Command::new(exe).raw_arg(args).output()
+            }
+        } else {
+            Command::new("cmd").args(["/C", uninstall_string]).output()
+        }
     } else {
-        uninstall_string.to_string()
+        Command::new("cmd").args(["/C", uninstall_string]).output()
     };
-
-    let output = Command::new("cmd")
-        .args(["/C", &wrapped])
-        .output();
 
     match output {
         Ok(o) if o.status.success() => Ok("completed".to_string()),
