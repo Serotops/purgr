@@ -194,7 +194,7 @@ export function Treemap({ entry, onDrillDown, onContextMenu, height = 400 }: Tre
       el.style.cssText = `
         position:absolute;overflow:hidden;pointer-events:none;
         left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;
-        background:${isLeaf ? node.color : `color-mix(in srgb, ${node.color} 20%, #1a1a28)`};
+        background:${isLeaf ? node.color : `color-mix(in srgb, ${node.color} 20%, #24243a)`};
         border:1px solid ${isLeaf ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.08)"};
         border-radius:${node.depth === 0 ? 4 : 2}px;
         z-index:${node.depth * 10 + (isLeaf ? 5 : 0)};
@@ -377,13 +377,13 @@ export function Treemap({ entry, onDrillDown, onContextMenu, height = 400 }: Tre
       <div
         ref={containerRef}
         className="relative rounded-lg overflow-hidden border border-border"
-        style={{ height, background: "#12121c" }}
+        style={{ height, background: "#1c1c28" }}
       />
       <div
         ref={tooltipRef}
         style={{
           display: "none", position: "fixed", zIndex: 9999, pointerEvents: "none",
-          background: "hsl(0 0% 9%)", border: "1px solid hsl(0 0% 20%)",
+          background: "hsl(250 15% 16%)", border: "1px solid hsl(250 10% 25%)",
           borderRadius: 6, padding: "8px 12px", maxWidth: 320,
           boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
         }}

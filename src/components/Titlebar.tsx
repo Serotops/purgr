@@ -24,7 +24,7 @@ export function Titlebar() {
 
   return (
     <div
-      className="flex-shrink-0 flex items-center h-8 bg-[#0c0c10] select-none"
+      className="flex-shrink-0 flex items-center h-8 bg-[#1e1e2a] select-none"
       data-tauri-drag-region
     >
       {/* App icon + title */}
