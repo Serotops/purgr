@@ -147,15 +147,19 @@ function App() {
   }, []);
 
   const ROW_HEIGHT = 52;
+  const ACTION_HEIGHT = 68;
   const EXPANDED_HEIGHT = 180;
 
   const getRowHeight = useCallback(
     (index: number) => {
       const app = apps[index];
       if (!app) return ROW_HEIGHT;
-      return expandedKeys.has(app.registry_key) ? EXPANDED_HEIGHT : ROW_HEIGHT;
+      if (expandedKeys.has(app.registry_key)) return EXPANDED_HEIGHT;
+      const action = activeActions.get(app.registry_key);
+      if (action) return ACTION_HEIGHT;
+      return ROW_HEIGHT;
     },
-    [apps, expandedKeys]
+    [apps, expandedKeys, activeActions]
   );
 
   const handleBulkRemove = async () => {
