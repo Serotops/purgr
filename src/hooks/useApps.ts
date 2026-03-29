@@ -2,6 +2,12 @@ import { useState, useCallback, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { InstalledApp, FilterStatus, SortField, SortDirection } from "@/types";
 
+export type AppAction = {
+  registryKey: string;
+  status: "uninstalling" | "verifying" | "done" | "error";
+  message: string;
+};
+
 export function useApps() {
   const [apps, setApps] = useState<InstalledApp[]>([]);
   const [loading, setLoading] = useState(false);
@@ -10,6 +16,19 @@ export function useApps() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [activeActions, setActiveActions] = useState<Map<string, AppAction>>(new Map());
+
+  const setAction = useCallback((registryKey: string, action: AppAction | null) => {
+    setActiveActions((prev) => {
+      const next = new Map(prev);
+      if (action === null) {
+        next.delete(registryKey);
+      } else {
+        next.set(registryKey, action);
+      }
+      return next;
+    });
+  }, []);
 
   const scan = useCallback(async () => {
     setLoading(true);
@@ -25,29 +44,61 @@ export function useApps() {
   }, []);
 
   const uninstallApp = useCallback(async (app: InstalledApp) => {
+    const key = app.registry_key;
     try {
+      // Phase 1: Running the uninstaller
+      setAction(key, { registryKey: key, status: "uninstalling", message: "Uninstaller is running..." });
+
       const uninstallCmd = app.quiet_uninstall_string || app.uninstall_string;
       await invoke<string>("uninstall_app", { uninstallString: uninstallCmd });
-      return { success: true, message: "Uninstall process launched" };
+
+      // Phase 2: Poll registry to verify removal (uninstaller may still be finishing)
+      setAction(key, { registryKey: key, status: "verifying", message: "Verifying removal..." });
+
+      let removed = false;
+      for (let attempt = 0; attempt < 6; attempt++) {
+        // Wait a bit before checking — give the uninstaller time to clean up
+        await new Promise((r) => setTimeout(r, attempt === 0 ? 1000 : 2000));
+        const stillExists = await invoke<boolean>("check_app_installed", { registryKey: key });
+        if (!stillExists) {
+          removed = true;
+          break;
+        }
+      }
+
+      if (removed) {
+        setAction(key, { registryKey: key, status: "done", message: "Successfully uninstalled" });
+        setApps((prev) => prev.filter((a) => a.registry_key !== key));
+        setTimeout(() => setAction(key, null), 2000);
+      } else {
+        // App still in registry — rescan to update orphan status
+        setAction(key, { registryKey: key, status: "done", message: "Uninstaller finished — app may need manual cleanup" });
+        await scan();
+        setTimeout(() => setAction(key, null), 3000);
+      }
     } catch (e) {
-      return { success: false, message: String(e) };
+      setAction(key, { registryKey: key, status: "error", message: String(e) });
+      setTimeout(() => setAction(key, null), 4000);
     }
-  }, []);
+  }, [scan, setAction]);
 
   const removeRegistryEntry = useCallback(async (app: InstalledApp) => {
+    const key = app.registry_key;
     try {
-      await invoke<string>("remove_registry_entry", { registryKey: app.registry_key });
-      setApps((prev) => prev.filter((a) => a.registry_key !== app.registry_key));
-      return { success: true, message: "Registry entry removed" };
+      setAction(key, { registryKey: key, status: "uninstalling", message: "Removing registry entry..." });
+      await invoke<string>("remove_registry_entry", { registryKey: key });
+      setAction(key, { registryKey: key, status: "done", message: "Registry entry removed" });
+      setApps((prev) => prev.filter((a) => a.registry_key !== key));
+      setTimeout(() => setAction(key, null), 2000);
     } catch (e) {
-      return { success: false, message: String(e) };
+      setAction(key, { registryKey: key, status: "error", message: String(e) });
+      setTimeout(() => setAction(key, null), 4000);
     }
-  }, []);
+  }, [setAction]);
 
   const filteredApps = useMemo(() => {
     let result = apps;
 
-    // Filter by search
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -57,14 +108,12 @@ export function useApps() {
       );
     }
 
-    // Filter by status
     if (filterStatus === "orphan") {
       result = result.filter((app) => app.is_orphan);
     } else if (filterStatus === "installed") {
       result = result.filter((app) => !app.is_orphan);
     }
 
-    // Sort
     result = [...result].sort((a, b) => {
       let cmp = 0;
       switch (sortField) {
@@ -110,6 +159,7 @@ export function useApps() {
     scan,
     uninstallApp,
     removeRegistryEntry,
+    activeActions,
     stats,
   };
 }

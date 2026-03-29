@@ -170,8 +170,24 @@ fn extract_exe_path(uninstall_string: &str) -> String {
     String::new()
 }
 
+pub fn check_entry_exists(registry_key: &str) -> Result<bool, Box<dyn std::error::Error>> {
+    let (hive_name, remaining) = registry_key
+        .split_once('\\')
+        .ok_or("Invalid registry key format")?;
+
+    let hive = match hive_name {
+        "HKLM" => RegKey::predef(HKEY_LOCAL_MACHINE),
+        "HKCU" => RegKey::predef(HKEY_CURRENT_USER),
+        _ => return Err("Unknown registry hive".into()),
+    };
+
+    match hive.open_subkey_with_flags(remaining, KEY_READ) {
+        Ok(_) => Ok(true),
+        Err(_) => Ok(false),
+    }
+}
+
 pub fn remove_registry_entry(registry_key: &str) -> Result<String, Box<dyn std::error::Error>> {
-    // Parse the registry key: HIVE\path\subkey_name
     let (hive_name, remaining) = registry_key
         .split_once('\\')
         .ok_or("Invalid registry key format")?;
@@ -186,8 +202,49 @@ pub fn remove_registry_entry(registry_key: &str) -> Result<String, Box<dyn std::
         _ => return Err("Unknown registry hive".into()),
     };
 
-    let parent = hive.open_subkey_with_flags(parent_path, KEY_WRITE)?;
-    parent.delete_subkey_all(subkey_name)?;
+    // Try direct deletion first
+    match hive.open_subkey_with_flags(parent_path, KEY_WRITE) {
+        Ok(parent) => {
+            parent.delete_subkey_all(subkey_name)?;
+            Ok(format!("Registry entry '{}' removed successfully", subkey_name))
+        }
+        Err(e) => {
+            // If access denied, fall back to elevated reg.exe command
+            if e.raw_os_error() == Some(5) {
+                remove_registry_entry_elevated(registry_key)
+            } else {
+                Err(e.into())
+            }
+        }
+    }
+}
 
-    Ok(format!("Registry entry '{}' removed successfully", subkey_name))
+/// Uses `reg delete` via PowerShell with elevated privileges (triggers UAC prompt)
+fn remove_registry_entry_elevated(registry_key: &str) -> Result<String, Box<dyn std::error::Error>> {
+    use std::process::Command;
+
+    // reg.exe expects HKLM\ or HKCU\ prefix
+    let full_key = registry_key.to_string();
+
+    let output = Command::new("powershell")
+        .args([
+            "-Command",
+            &format!(
+                "Start-Process reg.exe -ArgumentList 'delete \"{}\" /f' -Verb RunAs -Wait -WindowStyle Hidden",
+                full_key
+            ),
+        ])
+        .output()?;
+
+    if output.status.success() {
+        // Verify the key is actually gone
+        if !check_entry_exists(registry_key).unwrap_or(true) {
+            Ok(format!("Registry entry removed successfully (elevated)"))
+        } else {
+            Err("Elevation succeeded but registry entry still exists".into())
+        }
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Err(format!("Elevated removal failed: {}", stderr).into())
+    }
 }

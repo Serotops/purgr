@@ -15,3 +15,21 @@ export interface InstalledApp {
 export type FilterStatus = "all" | "installed" | "orphan";
 export type SortField = "name" | "publisher" | "size" | "status";
 export type SortDirection = "asc" | "desc";
+
+export interface DriveInfo {
+  letter: string;
+  label: string;
+  total_bytes: number;
+  free_bytes: number;
+  used_bytes: number;
+}
+
+export interface DirEntry {
+  name: string;
+  path: string;
+  size: number;
+  is_dir: boolean;
+  children: DirEntry[];
+  file_count: number;
+  dir_count: number;
+}

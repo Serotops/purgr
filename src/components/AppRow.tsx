@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { InstalledApp } from "@/types";
+import type { AppAction } from "@/hooks/useApps";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +22,9 @@ import {
   Package,
   ChevronDown,
   ChevronUp,
+  Loader2,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 
 function formatSize(kb: number): string {
@@ -34,37 +38,37 @@ function formatSize(kb: number): string {
 
 interface AppRowProps {
   app: InstalledApp;
-  onUninstall: (app: InstalledApp) => Promise<{ success: boolean; message: string }>;
-  onRemoveEntry: (app: InstalledApp) => Promise<{ success: boolean; message: string }>;
+  action: AppAction | undefined;
+  onUninstall: (app: InstalledApp) => void;
+  onRemoveEntry: (app: InstalledApp) => void;
 }
 
-export function AppRow({ app, onUninstall, onRemoveEntry }: AppRowProps) {
+export function AppRow({ app, action, onUninstall, onRemoveEntry }: AppRowProps) {
   const [expanded, setExpanded] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<"uninstall" | "remove" | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [actionResult, setActionResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  const handleAction = async (action: "uninstall" | "remove") => {
-    setActionLoading(true);
-    setActionResult(null);
-    const result = action === "uninstall"
-      ? await onUninstall(app)
-      : await onRemoveEntry(app);
-    setActionResult(result);
-    setActionLoading(false);
-    if (result.success) {
-      setTimeout(() => {
-        setConfirmDialog(null);
-        setActionResult(null);
-      }, 1500);
+  const isBusy = action?.status === "uninstalling" || action?.status === "verifying";
+
+  const handleConfirm = () => {
+    if (confirmDialog === "uninstall") {
+      onUninstall(app);
+    } else {
+      onRemoveEntry(app);
     }
+    setConfirmDialog(null);
   };
 
   return (
     <>
       <div
         className={`group border rounded-lg transition-all hover:shadow-sm ${
-          app.is_orphan
+          isBusy
+            ? "border-yellow-500/30 bg-yellow-500/5"
+            : action?.status === "done"
+            ? "border-green-500/30 bg-green-500/5"
+            : action?.status === "error"
+            ? "border-destructive/40 bg-destructive/10"
+            : app.is_orphan
             ? "border-destructive/30 bg-destructive/5"
             : "border-border bg-card"
         }`}
@@ -72,91 +76,147 @@ export function AppRow({ app, onUninstall, onRemoveEntry }: AppRowProps) {
         {/* Main row */}
         <div
           className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => !isBusy && setExpanded(!expanded)}
         >
-          {/* Icon */}
+          {/* Icon / Status indicator */}
           <div className={`flex-shrink-0 w-9 h-9 rounded-md flex items-center justify-center ${
-            app.is_orphan ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
+            isBusy
+              ? "bg-yellow-500/10 text-yellow-600"
+              : action?.status === "done"
+              ? "bg-green-500/10 text-green-600"
+              : action?.status === "error"
+              ? "bg-destructive/10 text-destructive"
+              : app.is_orphan
+              ? "bg-destructive/10 text-destructive"
+              : "bg-muted text-muted-foreground"
           }`}>
-            {app.is_orphan ? <FolderX className="w-4 h-4" /> : <Package className="w-4 h-4" />}
+            {isBusy ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : action?.status === "done" ? (
+              <CheckCircle2 className="w-4 h-4" />
+            ) : action?.status === "error" ? (
+              <XCircle className="w-4 h-4" />
+            ) : app.is_orphan ? (
+              <FolderX className="w-4 h-4" />
+            ) : (
+              <Package className="w-4 h-4" />
+            )}
           </div>
 
-          {/* Name + publisher */}
+          {/* Name + publisher / action status */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-medium text-sm truncate">{app.name}</span>
-              {app.is_orphan && (
+              {app.is_orphan && !action && (
                 <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4">
                   Orphan
                 </Badge>
               )}
+              {isBusy && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-yellow-500/50 text-yellow-600">
+                  {action?.status === "verifying" ? "Verifying" : "Uninstalling"}
+                </Badge>
+              )}
+              {action?.status === "done" && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-green-500/50 text-green-600">
+                  Removed
+                </Badge>
+              )}
+              {action?.status === "error" && (
+                <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4">
+                  Failed
+                </Badge>
+              )}
             </div>
-            {app.publisher && (
+            {action ? (
+              <p className={`text-xs truncate ${
+                action.status === "error" ? "text-destructive" : "text-muted-foreground"
+              }`}>
+                {action.message}
+              </p>
+            ) : app.publisher ? (
               <p className="text-xs text-muted-foreground truncate">{app.publisher}</p>
-            )}
-          </div>
-
-          {/* Version */}
-          <div className="hidden sm:block w-24 text-xs text-muted-foreground text-right truncate">
-            {app.version || "—"}
-          </div>
-
-          {/* Size */}
-          <div className="hidden md:block w-20 text-xs text-muted-foreground text-right">
-            {formatSize(app.estimated_size_kb)}
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {app.is_orphan ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmDialog("remove");
-                    }}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Remove registry entry</TooltipContent>
-              </Tooltip>
-            ) : app.uninstall_string ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmDialog("uninstall");
-                    }}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Uninstall</TooltipContent>
-              </Tooltip>
             ) : null}
           </div>
 
+          {/* Version */}
+          {!action && (
+            <div className="hidden sm:block w-24 text-xs text-muted-foreground text-right truncate">
+              {app.version || "—"}
+            </div>
+          )}
+
+          {/* Size */}
+          {!action && (
+            <div className="hidden md:block w-20 text-xs text-muted-foreground text-right">
+              {formatSize(app.estimated_size_kb)}
+            </div>
+          )}
+
+          {/* Actions */}
+          {!isBusy && !action && (
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {app.is_orphan ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDialog("remove");
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Remove registry entry</TooltipContent>
+                </Tooltip>
+              ) : app.uninstall_string ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDialog("uninstall");
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Uninstall</TooltipContent>
+                </Tooltip>
+              ) : null}
+            </div>
+          )}
+
           {/* Expand chevron */}
-          <div className="text-muted-foreground">
-            {expanded ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
-          </div>
+          {!action && (
+            <div className="text-muted-foreground">
+              {expanded ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </div>
+          )}
         </div>
 
+        {/* Progress bar for busy state */}
+        {isBusy && (
+          <div className="px-4 pb-2">
+            <div className="h-1 bg-muted rounded-full overflow-hidden">
+              <div className="h-full bg-yellow-500 rounded-full animate-pulse w-full" />
+            </div>
+          </div>
+        )}
+
         {/* Expanded details */}
-        {expanded && (
+        {expanded && !action && (
           <div className="px-4 pb-3 pt-0 border-t border-border/50">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 mt-3 text-xs">
               <Detail label="Version" value={app.version} />
@@ -203,29 +263,16 @@ export function AppRow({ app, onUninstall, onRemoveEntry }: AppRowProps) {
             </DialogTitle>
             <DialogDescription>
               {confirmDialog === "uninstall"
-                ? `Are you sure you want to uninstall "${app.name}"? This will run the application's uninstaller.`
+                ? `Are you sure you want to uninstall "${app.name}"? This will run the application's uninstaller and may take a moment.`
                 : `Are you sure you want to remove the registry entry for "${app.name}"? This only removes the entry from Windows — it does not delete any files.`}
             </DialogDescription>
           </DialogHeader>
-          {actionResult && (
-            <div className={`text-sm px-3 py-2 rounded-md ${
-              actionResult.success
-                ? "bg-green-500/10 text-green-600"
-                : "bg-destructive/10 text-destructive"
-            }`}>
-              {actionResult.message}
-            </div>
-          )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDialog(null)} disabled={actionLoading}>
+            <Button variant="outline" onClick={() => setConfirmDialog(null)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={() => confirmDialog && handleAction(confirmDialog)}
-              disabled={actionLoading}
-            >
-              {actionLoading ? "Processing..." : "Confirm"}
+            <Button variant="destructive" onClick={handleConfirm}>
+              {confirmDialog === "uninstall" ? "Uninstall" : "Remove"}
             </Button>
           </DialogFooter>
         </DialogContent>

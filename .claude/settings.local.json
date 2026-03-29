@@ -7,7 +7,8 @@
       "Bash(pnpm dlx:*)",
       "Bash(/mnt/c/Users/spark/.cargo/bin/cargo.exe check:*)",
       "Bash(pnpm approve-builds:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(cargo tree:*)"
     ]
   }
 }
